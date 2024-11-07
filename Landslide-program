@@ -1,0 +1,67 @@
+#include <Wire.h>
+#include <MPU6050.h>
+
+MPU6050 mpu;
+
+// Define output pins
+const int buzzerPin = 8;
+const int ledPin = 9;
+
+// Threshold for vibration intensity
+const float vibrationThreshold = 1.5;  // Adjust based on testing
+
+void setup() {
+  Serial.begin(9600);
+
+  // Initialize MPU6050
+  Wire.begin();
+  mpu.initialize();
+  
+  // Check MPU6050 connection
+  if (!mpu.testConnection()) {
+    Serial.println("MPU6050 connection failed!");
+    while (1);  // Stop if connection fails
+  }
+  
+  Serial.println("MPU6050 connected!");
+
+  // Set output pin modes
+  pinMode(buzzerPin, OUTPUT);
+  pinMode(ledPin, OUTPUT);
+  
+  // Turn off buzzer and LED initially
+  digitalWrite(buzzerPin, LOW);
+  digitalWrite(ledPin, LOW);
+}
+
+void loop() {
+  // Get acceleration values
+  int16_t ax, ay, az;
+  mpu.getAcceleration(&ax, &ay, &az);
+
+  // Calculate the magnitude of acceleration
+  float acceleration = sqrt(sq(ax) + sq(ay) + sq(az)) / 16384.0;  // Normalize by 16384 for MPU6050
+
+  Serial.print("Acceleration: ");
+  Serial.println(acceleration);
+
+  // Check if vibration exceeds the threshold
+  if (acceleration > vibrationThreshold) {
+    triggerAlert();  // Trigger landslide alert
+  } else {
+    resetAlert();    // Reset alert if below threshold
+  }
+
+  delay(100);  // Small delay for readability
+}
+
+void triggerAlert() {
+  digitalWrite(buzzerPin, HIGH);  // Activate buzzer
+  digitalWrite(ledPin, HIGH);     // Turn on LED
+  Serial.println("Landslide detected! Warning activated.");
+}
+
+void resetAlert() {
+  digitalWrite(buzzerPin, LOW);   // Deactivate buzzer
+  digitalWrite(ledPin, LOW);      // Turn off LED
+}
